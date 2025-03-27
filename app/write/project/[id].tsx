@@ -6,9 +6,9 @@ import {
   StatusBar,
   TouchableOpacity,
   ScrollView,
-  FlatList,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -21,238 +21,7 @@ import {
   MoreVertical,
   ChevronRight,
 } from "lucide-react-native";
-
-// Mock data for project details
-const projectsData = {
-  "1": {
-    id: "1",
-    title: "The Hidden World",
-    coverImage:
-      "https://images.unsplash.com/photo-1518744386442-2d48ac47a7eb?w=400&q=80",
-    description: "A fantasy novel about a hidden world beneath our own.",
-    genres: ["Fantasy", "Adventure", "Young Adult"],
-    status: "In Progress",
-    views: 245,
-    likes: 32,
-    comments: 8,
-    isPublic: true,
-    createdAt: "2023-10-15",
-    lastUpdated: "2023-11-02",
-    chapters: [
-      {
-        id: "1-1",
-        title: "The Discovery",
-        wordCount: 2450,
-        lastEdited: "2 days ago",
-        status: "Published",
-        views: 120,
-        likes: 18,
-        comments: 5,
-      },
-      {
-        id: "1-2",
-        title: "The Entrance",
-        wordCount: 1890,
-        lastEdited: "3 days ago",
-        status: "Published",
-        views: 95,
-        likes: 12,
-        comments: 3,
-      },
-      {
-        id: "1-3",
-        title: "New Friends",
-        wordCount: 2100,
-        lastEdited: "5 days ago",
-        status: "Published",
-        views: 30,
-        likes: 2,
-        comments: 0,
-      },
-      {
-        id: "1-4",
-        title: "The Challenge",
-        wordCount: 1750,
-        lastEdited: "1 week ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "1-5",
-        title: "The Return",
-        wordCount: 1200,
-        lastEdited: "2 days ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    title: "Midnight Memories",
-    coverImage:
-      "https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=400&q=80",
-    description:
-      "A collection of short stories about memories that haunt us at night.",
-    genres: ["Horror", "Thriller", "Mystery"],
-    status: "Published",
-    views: 1203,
-    likes: 187,
-    comments: 42,
-    isPublic: true,
-    createdAt: "2023-09-05",
-    lastUpdated: "2023-10-28",
-    chapters: [
-      {
-        id: "2-1",
-        title: "The Forgotten Face",
-        wordCount: 1850,
-        lastEdited: "2 weeks ago",
-        status: "Published",
-        views: 450,
-        likes: 65,
-        comments: 12,
-      },
-      {
-        id: "2-2",
-        title: "Whispers in the Dark",
-        wordCount: 2100,
-        lastEdited: "3 weeks ago",
-        status: "Published",
-        views: 420,
-        likes: 72,
-        comments: 18,
-      },
-      {
-        id: "2-3",
-        title: "The Last Train Home",
-        wordCount: 1950,
-        lastEdited: "1 month ago",
-        status: "Published",
-        views: 333,
-        likes: 50,
-        comments: 12,
-      },
-    ],
-  },
-  "3": {
-    id: "3",
-    title: "The Science of Tomorrow",
-    coverImage:
-      "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=400&q=80",
-    description: "A science fiction novel set in the near future.",
-    genres: ["Science Fiction", "Dystopian"],
-    status: "Draft",
-    views: 0,
-    likes: 0,
-    comments: 0,
-    isPublic: false,
-    createdAt: "2023-10-30",
-    lastUpdated: "2023-11-01",
-    chapters: [
-      {
-        id: "3-1",
-        title: "The New Beginning",
-        wordCount: 2200,
-        lastEdited: "3 days ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-2",
-        title: "The Discovery",
-        wordCount: 1800,
-        lastEdited: "4 days ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-3",
-        title: "The Revelation",
-        wordCount: 1500,
-        lastEdited: "5 days ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-4",
-        title: "The Conflict",
-        wordCount: 1900,
-        lastEdited: "6 days ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-5",
-        title: "The Resolution",
-        wordCount: 2100,
-        lastEdited: "1 week ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-6",
-        title: "The Aftermath",
-        wordCount: 1700,
-        lastEdited: "1 week ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-7",
-        title: "The New World",
-        wordCount: 2300,
-        lastEdited: "1 week ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-      {
-        id: "3-8",
-        title: "The Future",
-        wordCount: 2000,
-        lastEdited: "1 week ago",
-        status: "Draft",
-        views: 0,
-        likes: 0,
-        comments: 0,
-      },
-    ],
-  },
-  new: {
-    id: "new",
-    title: "Untitled Project",
-    coverImage:
-      "https://images.unsplash.com/photo-1518744386442-2d48ac47a7eb?w=400&q=80",
-    description: "Start writing your new story...",
-    genres: [],
-    status: "Draft",
-    views: 0,
-    likes: 0,
-    comments: 0,
-    isPublic: true,
-    createdAt: new Date().toISOString().split("T")[0],
-    lastUpdated: new Date().toISOString().split("T")[0],
-    chapters: [],
-  },
-};
+import { getProject, Project } from "../../../src/services/api";
 
 export default function ProjectDetailScreen() {
   const params = useLocalSearchParams();
@@ -261,26 +30,84 @@ export default function ProjectDetailScreen() {
   const router = useRouter();
   const [showOptions, setShowOptions] = useState(false);
   const [firstChapter, setFirstChapter] = useState(false);
+  const [projectData, setProjectData] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Get project data based on ID from the URL
   const projectId = Array.isArray(id) ? id[0] : id;
-  const projectData = projectsData[projectId as keyof typeof projectsData];
 
   useEffect(() => {
-    if (isFirstChapter) {
+    const fetchProject = async () => {
+      try {
+        const project = await getProject(projectId);
+        setProjectData(project);
+      } catch (error) {
+        console.error("Error fetching project:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProject();
+  }, [projectId]);
+
+  useEffect(() => {
+    if (isFirstChapter && projectData) {
       setFirstChapter(true);
       // Automatically open the chapter editor for the first chapter
       setTimeout(() => {
         handleCreateNewChapter();
       }, 500);
     }
-  }, [isFirstChapter]);
+  }, [isFirstChapter, projectData]);
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
+          <TouchableOpacity onPress={() => router.back()}>
+            <ArrowLeft size={24} color="#000000" />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold" numberOfLines={1}>
+            Loading Project...
+          </Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#4F46E5" />
+          <Text className="mt-4 text-gray-600">Loading project details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!projectData) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text>Project not found</Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-white">
+        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+        <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
+          <TouchableOpacity onPress={() => router.back()}>
+            <ArrowLeft size={24} color="#000000" />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold" numberOfLines={1}>
+            Error
+          </Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View className="flex-1 items-center justify-center p-4">
+          <Text className="text-lg text-gray-800 mb-2">Project not found</Text>
+          <Text className="text-gray-600 text-center mb-6">
+            The project you're looking for doesn't exist or has been removed.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace("/write")}
+            className="bg-primary-600 px-4 py-2 rounded-lg"
+          >
+            <Text className="text-white font-medium">Go to Projects</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -355,6 +182,22 @@ export default function ProjectDetailScreen() {
         <Text className={`text-xs font-medium ${textColor}`}>{status}</Text>
       </View>
     );
+  };
+
+  // Format the lastEdited date to a relative time string
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diffInDays === 0) return "Today";
+    if (diffInDays === 1) return "Yesterday";
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
+    return `${Math.floor(diffInDays / 365)} years ago`;
   };
 
   return (
@@ -547,7 +390,7 @@ export default function ProjectDetailScreen() {
                   <View className="flex-row justify-between items-center mt-2">
                     <Text className="text-gray-500 text-xs">
                       {chapter.wordCount} words • Last edited{" "}
-                      {chapter.lastEdited}
+                      {formatRelativeTime(chapter.lastEdited)}
                     </Text>
                     <View className="flex-row items-center">
                       {chapter.status === "Published" && (
