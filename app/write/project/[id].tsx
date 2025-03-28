@@ -40,7 +40,28 @@ export default function ProjectDetailScreen() {
     const fetchProject = async () => {
       try {
         const project = await getProject(projectId);
-        setProjectData(project);
+        if (project) {
+          setProjectData(project);
+        } else if (projectId === "new") {
+          // Create a default project for new projects
+          const newProject: Project = {
+            id: "new",
+            title: "New Writing Project",
+            coverImage:
+              "https://images.unsplash.com/photo-1518744386442-2d48ac47a7eb?w=400&q=80",
+            description: "Start writing your new story here.",
+            genres: [],
+            status: "Draft",
+            views: 0,
+            likes: 0,
+            comments: 0,
+            isPublic: true,
+            createdAt: new Date().toISOString().split("T")[0],
+            lastUpdated: new Date().toISOString().split("T")[0],
+            chapters: [],
+          };
+          setProjectData(newProject);
+        }
       } catch (error) {
         console.error("Error fetching project:", error);
       } finally {

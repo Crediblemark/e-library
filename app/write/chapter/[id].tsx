@@ -1,4 +1,105 @@
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  Alert,
+  StatusBar,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  ArrowLeft,
+  Save,
+  Eye,
+  MoreVertical,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  Code,
+  CheckSquare,
+  Plus,
+  Trash2,
+  MoveVertical,
+  Target,
+  Clock,
+  X,
+  CheckCircle2,
+  Timer,
+} from "lucide-react-native";
 
+// Types
+type BlockType =
+  | "paragraph"
+  | "heading-1"
+  | "heading-2"
+  | "heading-3"
+  | "bulleted-list"
+  | "numbered-list"
+  | "quote"
+  | "code"
+  | "image"
+  | "todo";
+
+type Block = {
+  id: string;
+  type: BlockType;
+  content: string;
+  checked?: boolean;
+};
+
+type Chapter = {
+  id: string;
+  projectId: string;
+  title: string;
+  blocks: Block[];
+  status: "Draft" | "Published";
+  lastEdited: string;
+  wordCount: number;
+};
+
+// Mock data for chapters
+const chaptersData = {
+  ch1: {
+    id: "ch1",
+    projectId: "p1",
+    title: "The Discovery",
+    blocks: [
+      {
+        id: "b1",
+        type: "heading-1",
+        content: "The Discovery",
+      },
+      {
+        id: "b2",
+        type: "paragraph",
+        content:
+          "I found it in the basement of my grandmother's house, tucked away behind stacks of yellowing newspapers and forgotten holiday decorations. A trapdoor, small and unassuming, its brass handle tarnished with age.",
+      },
+      {
+        id: "b3",
+        type: "paragraph",
+        content:
+          "It took some effort to pull it open – the hinges protesting with a screech that echoed in the musty air. A set of narrow stone steps descended into darkness. I should have been afraid, perhaps, but curiosity has always been my weakness.",
+      },
+      {
+        id: "b4",
+        type: "heading-2",
+        content: "The Chamber Below",
+      },
+      {
+        id: "b5",
+        type: "paragraph",
+        content:
           "On the pedestal lay a book, bound in what appeared to be leather, though its texture seemed odd when I finally worked up the courage to touch it. The cover bore no title, only an intricate symbol that seemed to shift slightly when viewed from different angles.",
       },
       {
@@ -205,7 +306,7 @@ export default function ChapterEditorScreen() {
   };
 
   const handleBackPress = () => {
-    if (chapterContent.trim() !== "") {
+    if (blocks.some((block) => block.content.trim() !== "")) {
       Alert.alert(
         "Unsaved Changes",
         "You have unsaved changes. Do you want to save before leaving?",

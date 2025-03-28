@@ -1,5 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { User, UserRole, getCurrentUser } from "../utils/auth";
+import { UserRole } from "../utils/auth";
+import { supabase } from "./supabase";
 
 // Types for our data models
 export interface Book {
@@ -94,326 +94,433 @@ export type BlockType =
   | "image"
   | "todo";
 
-// Mock data storage (in a real app, this would be API calls)
-const STORAGE_KEYS = {
-  BORROWED_BOOKS: "borrowed_books",
-  READING_HISTORY: "reading_history",
-  ACHIEVEMENTS: "achievements",
-  READING_STATS: "reading_stats",
-  PROJECTS: "projects",
-  CHAPTERS: "chapters",
-};
-
-// Initialize with some data if none exists
-const initializeData = async () => {
-  const user = await getCurrentUser();
-  if (!user) return;
-
-  // Check if we already have data
-  const hasData = await AsyncStorage.getItem(STORAGE_KEYS.PROJECTS);
-  if (hasData) return;
-
-  // Sample projects based on user role
-  let sampleProjects: Project[] = [];
-
-  if (
-    user.role === UserRole.READER ||
-    user.role === UserRole.LIBRARIAN ||
-    user.role === UserRole.ADMIN
-  ) {
-    sampleProjects = [
-      {
-        id: "1",
-        title: "The Hidden World",
-        coverImage:
-          "https://images.unsplash.com/photo-1518744386442-2d48ac47a7eb?w=400&q=80",
-        description: "A fantasy novel about a hidden world beneath our own.",
-        genres: ["Fantasy", "Adventure", "Young Adult"],
-        status: "In Progress",
-        views: 245,
-        likes: 32,
-        comments: 8,
-        isPublic: true,
-        createdAt: "2023-10-15",
-        lastUpdated: "2023-11-02",
-        chapters: [
-          {
-            id: "1-1",
-            projectId: "1",
-            title: "The Discovery",
-            wordCount: 2450,
-            lastEdited: "2023-11-02",
-            status: "Published",
-            views: 120,
-            likes: 18,
-            comments: 5,
-            blocks: [
-              {
-                id: "b1",
-                type: "paragraph",
-                content:
-                  "It all began on a rainy Tuesday afternoon. The kind of rain that doesn't pour but persists, a constant drizzle that soaks through everything eventually. I was in the basement of my grandmother's old house, sorting through decades of accumulated memories after her passing.",
-              },
-              {
-                id: "b2",
-                type: "paragraph",
-                content:
-                  "The house itself was a relic, built in the early 1900s with all the character and quirks you'd expect. Creaking floorboards that announced your presence no matter how carefully you stepped. Doors that would swing open or closed seemingly of their own accord. Windows that whistled when the wind blew from the east.",
-              },
-              {
-                id: "b3",
-                type: "heading-2",
-                content: "The Basement",
-              },
-              {
-                id: "b4",
-                type: "paragraph",
-                content:
-                  "But it was the basement that always fascinated me as a child. Forbidden territory, of course, which only added to its mystique. Now, as an adult tasked with clearing out the house before it was sold, I finally had free reign to explore its secrets.",
-              },
-            ],
-          },
-          {
-            id: "1-2",
-            projectId: "1",
-            title: "The Entrance",
-            wordCount: 1890,
-            lastEdited: "2023-11-01",
-            status: "Published",
-            views: 95,
-            likes: 12,
-            comments: 3,
-            blocks: [
-              {
-                id: "b1",
-                type: "paragraph",
-                content:
-                  "The flashlight beam cut through the darkness, revealing stone steps descending steeply into the earth. They were worn in the middle, suggesting countless feet had traversed them over the years.",
-              },
-              {
-                id: "b2",
-                type: "heading-2",
-                content: "The Descent",
-              },
-              {
-                id: "b3",
-                type: "paragraph",
-                content:
-                  "As I descended, the temperature dropped noticeably. By the time I reached the bottom – some thirty steps down – I could see my breath forming small clouds in the beam of light.",
-              },
-            ],
-          },
-        ],
-      },
-    ];
-  }
-
-  // Sample borrowed books
-  const sampleBorrowedBooks: BorrowedBook[] = [
-    {
-      id: "b1",
-      title: "The Great Gatsby",
-      author: "F. Scott Fitzgerald",
-      coverImage:
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80",
-      description:
-        "A novel about the mysteriously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.",
-      genres: ["Classic", "Fiction"],
-      pageCount: 180,
-      publishedDate: "1925-04-10",
-      publisher: "Charles Scribner's Sons",
-      rating: 4.5,
-      status: "Borrowed",
-      borrowDate: "2023-10-15",
-      dueDate: "2023-11-15",
-    },
-    {
-      id: "b2",
-      title: "To Kill a Mockingbird",
-      author: "Harper Lee",
-      coverImage:
-        "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=400&q=80",
-      description:
-        "The story of racial injustice and the destruction of innocence in a small Southern town during the Depression.",
-      genres: ["Classic", "Fiction"],
-      pageCount: 281,
-      publishedDate: "1960-07-11",
-      publisher: "J. B. Lippincott & Co.",
-      rating: 4.8,
-      status: "Borrowed",
-      borrowDate: "2023-10-20",
-      dueDate: "2023-11-20",
-    },
-  ];
-
-  // Sample reading history
-  const sampleReadingHistory: ReadingHistory[] = [
-    {
-      bookId: "h1",
-      bookTitle: "1984",
-      coverImage:
-        "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400&q=80",
-      lastReadDate: "2023-10-01",
-      progress: 100,
-    },
-    {
-      bookId: "h2",
-      bookTitle: "Pride and Prejudice",
-      coverImage:
-        "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80",
-      lastReadDate: "2023-09-15",
-      progress: 100,
-    },
-    {
-      bookId: "h3",
-      bookTitle: "The Hobbit",
-      coverImage:
-        "https://images.unsplash.com/photo-1629992101753-56d196c8aabb?w=400&q=80",
-      lastReadDate: "2023-08-20",
-      progress: 100,
-    },
-  ];
-
-  // Sample achievements
-  const sampleAchievements: Achievement[] = [
-    {
-      id: "a1",
-      title: "Bookworm",
-      description: "Read 5 books",
-      icon: "📚",
-      dateEarned: "2023-09-15",
-      progress: 100,
-      isCompleted: true,
-    },
-    {
-      id: "a2",
-      title: "Speed Reader",
-      description: "Finish a book in less than 3 days",
-      icon: "⚡",
-      dateEarned: "2023-10-01",
-      progress: 100,
-      isCompleted: true,
-    },
-    {
-      id: "a3",
-      title: "Genre Explorer",
-      description: "Read books from 5 different genres",
-      icon: "🧭",
-      dateEarned: "",
-      progress: 60,
-      isCompleted: false,
-    },
-  ];
-
-  // Sample reading stats
-  const sampleReadingStats: ReadingStats = {
-    booksRead: 8,
-    pagesRead: 2156,
-    hoursRead: 72,
-  };
-
-  // Store the sample data
-  await AsyncStorage.setItem(
-    STORAGE_KEYS.PROJECTS,
-    JSON.stringify(sampleProjects),
-  );
-  await AsyncStorage.setItem(
-    STORAGE_KEYS.BORROWED_BOOKS,
-    JSON.stringify(sampleBorrowedBooks),
-  );
-  await AsyncStorage.setItem(
-    STORAGE_KEYS.READING_HISTORY,
-    JSON.stringify(sampleReadingHistory),
-  );
-  await AsyncStorage.setItem(
-    STORAGE_KEYS.ACHIEVEMENTS,
-    JSON.stringify(sampleAchievements),
-  );
-  await AsyncStorage.setItem(
-    STORAGE_KEYS.READING_STATS,
-    JSON.stringify(sampleReadingStats),
-  );
-};
-
-// API functions
+// API functions using Supabase
 export const getProjects = async (): Promise<Project[]> => {
-  await initializeData();
-  const projectsJson = await AsyncStorage.getItem(STORAGE_KEYS.PROJECTS);
-  return projectsJson ? JSON.parse(projectsJson) : [];
+  try {
+    const { data: projectsData, error: projectsError } = await supabase
+      .from("projects")
+      .select("*");
+
+    if (projectsError) {
+      console.error("Error fetching projects:", projectsError);
+      return [];
+    }
+
+    // For each project, fetch its chapters
+    const projectsWithChapters = await Promise.all(
+      projectsData.map(async (project) => {
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from("chapters")
+          .select("*")
+          .eq("project_id", project.id);
+
+        if (chaptersError) {
+          console.error(
+            `Error fetching chapters for project ${project.id}:`,
+            chaptersError,
+          );
+          return { ...project, chapters: [] };
+        }
+
+        // For each chapter, fetch its blocks
+        const chaptersWithBlocks = await Promise.all(
+          chaptersData.map(async (chapter) => {
+            const { data: blocksData, error: blocksError } = await supabase
+              .from("blocks")
+              .select("*")
+              .eq("chapter_id", chapter.id)
+              .order("position", { ascending: true });
+
+            if (blocksError) {
+              console.error(
+                `Error fetching blocks for chapter ${chapter.id}:`,
+                blocksError,
+              );
+              return { ...chapter, blocks: [] };
+            }
+
+            // Transform from database format to application format
+            return {
+              id: chapter.id,
+              projectId: chapter.project_id,
+              title: chapter.title,
+              status: chapter.status,
+              lastEdited: chapter.last_edited,
+              wordCount: chapter.word_count,
+              views: chapter.views,
+              likes: chapter.likes,
+              comments: chapter.comments,
+              blocks: blocksData.map((block) => ({
+                id: block.id,
+                type: block.type as BlockType,
+                content: block.content,
+                checked: block.checked,
+                imageUrl: block.image_url,
+              })),
+            };
+          }),
+        );
+
+        // Transform from database format to application format
+        return {
+          id: project.id,
+          title: project.title,
+          coverImage: project.cover_image,
+          description: project.description,
+          genres: project.genres,
+          status: project.status,
+          views: project.views,
+          likes: project.likes,
+          comments: project.comments,
+          isPublic: project.is_public,
+          createdAt: project.created_at,
+          lastUpdated: project.last_updated,
+          chapters: chaptersWithBlocks,
+        };
+      }),
+    );
+
+    return projectsWithChapters;
+  } catch (error) {
+    console.error("Error in getProjects:", error);
+    return [];
+  }
 };
 
 export const getProject = async (id: string): Promise<Project | null> => {
-  const projects = await getProjects();
-  return projects.find((project) => project.id === id) || null;
+  try {
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (projectError) {
+      console.error(`Error fetching project ${id}:`, projectError);
+      return null;
+    }
+
+    // Fetch chapters for this project
+    const { data: chaptersData, error: chaptersError } = await supabase
+      .from("chapters")
+      .select("*")
+      .eq("project_id", id);
+
+    if (chaptersError) {
+      console.error(
+        `Error fetching chapters for project ${id}:`,
+        chaptersError,
+      );
+      return { ...project, chapters: [] };
+    }
+
+    // For each chapter, fetch its blocks
+    const chaptersWithBlocks = await Promise.all(
+      chaptersData.map(async (chapter) => {
+        const { data: blocksData, error: blocksError } = await supabase
+          .from("blocks")
+          .select("*")
+          .eq("chapter_id", chapter.id)
+          .order("position", { ascending: true });
+
+        if (blocksError) {
+          console.error(
+            `Error fetching blocks for chapter ${chapter.id}:`,
+            blocksError,
+          );
+          return { ...chapter, blocks: [] };
+        }
+
+        // Transform from database format to application format
+        return {
+          id: chapter.id,
+          projectId: chapter.project_id,
+          title: chapter.title,
+          status: chapter.status,
+          lastEdited: chapter.last_edited,
+          wordCount: chapter.word_count,
+          views: chapter.views,
+          likes: chapter.likes,
+          comments: chapter.comments,
+          blocks: blocksData.map((block) => ({
+            id: block.id,
+            type: block.type as BlockType,
+            content: block.content,
+            checked: block.checked,
+            imageUrl: block.image_url,
+          })),
+        };
+      }),
+    );
+
+    // Transform from database format to application format
+    return {
+      id: project.id,
+      title: project.title,
+      coverImage: project.cover_image,
+      description: project.description,
+      genres: project.genres,
+      status: project.status,
+      views: project.views,
+      likes: project.likes,
+      comments: project.comments,
+      isPublic: project.is_public,
+      createdAt: project.created_at,
+      lastUpdated: project.last_updated,
+      chapters: chaptersWithBlocks,
+    };
+  } catch (error) {
+    console.error(`Error in getProject for id ${id}:`, error);
+    return null;
+  }
 };
 
 export const getChapter = async (
   projectId: string,
   chapterId: string,
 ): Promise<Chapter | null> => {
-  const project = await getProject(projectId);
-  if (!project) return null;
+  try {
+    const { data: chapter, error: chapterError } = await supabase
+      .from("chapters")
+      .select("*")
+      .eq("id", chapterId)
+      .eq("project_id", projectId)
+      .single();
 
-  return project.chapters.find((chapter) => chapter.id === chapterId) || null;
+    if (chapterError) {
+      console.error(`Error fetching chapter ${chapterId}:`, chapterError);
+      return null;
+    }
+
+    // Fetch blocks for this chapter
+    const { data: blocksData, error: blocksError } = await supabase
+      .from("blocks")
+      .select("*")
+      .eq("chapter_id", chapterId)
+      .order("position", { ascending: true });
+
+    if (blocksError) {
+      console.error(
+        `Error fetching blocks for chapter ${chapterId}:`,
+        blocksError,
+      );
+      return { ...chapter, blocks: [] };
+    }
+
+    // Transform from database format to application format
+    return {
+      id: chapter.id,
+      projectId: chapter.project_id,
+      title: chapter.title,
+      status: chapter.status,
+      lastEdited: chapter.last_edited,
+      wordCount: chapter.word_count,
+      views: chapter.views,
+      likes: chapter.likes,
+      comments: chapter.comments,
+      blocks: blocksData.map((block) => ({
+        id: block.id,
+        type: block.type as BlockType,
+        content: block.content,
+        checked: block.checked,
+        imageUrl: block.image_url,
+      })),
+    };
+  } catch (error) {
+    console.error(`Error in getChapter for id ${chapterId}:`, error);
+    return null;
+  }
 };
 
 export const saveChapter = async (chapter: Chapter): Promise<boolean> => {
   try {
-    const projects = await getProjects();
-    const projectIndex = projects.findIndex((p) => p.id === chapter.projectId);
+    // First, update the chapter metadata
+    const { error: chapterError } = await supabase.from("chapters").upsert({
+      id: chapter.id,
+      project_id: chapter.projectId,
+      title: chapter.title,
+      status: chapter.status,
+      last_edited: new Date().toISOString(),
+      word_count: chapter.wordCount,
+      views: chapter.views || 0,
+      likes: chapter.likes || 0,
+      comments: chapter.comments || 0,
+    });
 
-    if (projectIndex === -1) return false;
-
-    const chapterIndex = projects[projectIndex].chapters.findIndex(
-      (c) => c.id === chapter.id,
-    );
-
-    if (chapterIndex === -1) {
-      // New chapter
-      projects[projectIndex].chapters.push(chapter);
-    } else {
-      // Update existing chapter
-      projects[projectIndex].chapters[chapterIndex] = chapter;
+    if (chapterError) {
+      console.error(`Error saving chapter ${chapter.id}:`, chapterError);
+      return false;
     }
 
-    // Update last updated date
-    projects[projectIndex].lastUpdated = new Date().toISOString().split("T")[0];
+    // Then, update all blocks
+    // First, delete existing blocks for this chapter
+    const { error: deleteError } = await supabase
+      .from("blocks")
+      .delete()
+      .eq("chapter_id", chapter.id);
 
-    await AsyncStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(projects));
+    if (deleteError) {
+      console.error(
+        `Error deleting blocks for chapter ${chapter.id}:`,
+        deleteError,
+      );
+      return false;
+    }
+
+    // Then, insert new blocks
+    const blocksToInsert = chapter.blocks.map((block, index) => ({
+      id: block.id,
+      chapter_id: chapter.id,
+      type: block.type,
+      content: block.content,
+      checked: block.checked,
+      image_url: block.imageUrl,
+      position: index,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("blocks")
+      .insert(blocksToInsert);
+
+    if (insertError) {
+      console.error(
+        `Error inserting blocks for chapter ${chapter.id}:`,
+        insertError,
+      );
+      return false;
+    }
+
+    // Update the project's last_updated field
+    const { error: projectError } = await supabase
+      .from("projects")
+      .update({ last_updated: new Date().toISOString() })
+      .eq("id", chapter.projectId);
+
+    if (projectError) {
+      console.error(
+        `Error updating project ${chapter.projectId}:`,
+        projectError,
+      );
+      // Not returning false here as the chapter was saved successfully
+    }
+
     return true;
   } catch (error) {
-    console.error("Error saving chapter:", error);
+    console.error(`Error in saveChapter for id ${chapter.id}:`, error);
     return false;
   }
 };
 
 export const getBorrowedBooks = async (): Promise<BorrowedBook[]> => {
-  await initializeData();
-  const booksJson = await AsyncStorage.getItem(STORAGE_KEYS.BORROWED_BOOKS);
-  return booksJson ? JSON.parse(booksJson) : [];
+  try {
+    const { data: borrowedBooks, error } = await supabase.from("borrowed_books")
+      .select(`
+        *,
+        books:book_id(*)
+      `);
+
+    if (error) {
+      console.error("Error fetching borrowed books:", error);
+      return [];
+    }
+
+    // Transform from database format to application format
+    return borrowedBooks.map((item) => ({
+      id: item.books.id,
+      title: item.books.title,
+      author: item.books.author,
+      coverImage: item.books.cover_image,
+      description: item.books.description,
+      genres: item.books.genres,
+      pageCount: item.books.page_count,
+      publishedDate: item.books.published_date,
+      publisher: item.books.publisher,
+      rating: item.books.rating,
+      status: "Borrowed",
+      borrowDate: item.borrow_date,
+      dueDate: item.due_date,
+    }));
+  } catch (error) {
+    console.error("Error in getBorrowedBooks:", error);
+    return [];
+  }
 };
 
 export const getReadingHistory = async (): Promise<ReadingHistory[]> => {
-  await initializeData();
-  const historyJson = await AsyncStorage.getItem(STORAGE_KEYS.READING_HISTORY);
-  return historyJson ? JSON.parse(historyJson) : [];
+  try {
+    const { data: readingHistory, error } = await supabase.from(
+      "reading_history",
+    ).select(`
+        *,
+        books:book_id(*)
+      `);
+
+    if (error) {
+      console.error("Error fetching reading history:", error);
+      return [];
+    }
+
+    // Transform from database format to application format
+    return readingHistory.map((item) => ({
+      bookId: item.book_id,
+      bookTitle: item.books.title,
+      coverImage: item.books.cover_image,
+      lastReadDate: item.last_read_date,
+      progress: item.progress,
+    }));
+  } catch (error) {
+    console.error("Error in getReadingHistory:", error);
+    return [];
+  }
 };
 
 export const getAchievements = async (): Promise<Achievement[]> => {
-  await initializeData();
-  const achievementsJson = await AsyncStorage.getItem(
-    STORAGE_KEYS.ACHIEVEMENTS,
-  );
-  return achievementsJson ? JSON.parse(achievementsJson) : [];
+  try {
+    const { data: achievements, error } = await supabase
+      .from("achievements")
+      .select("*");
+
+    if (error) {
+      console.error("Error fetching achievements:", error);
+      return [];
+    }
+
+    // Transform from database format to application format
+    return achievements.map((item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      icon: item.icon,
+      dateEarned: item.date_earned || "",
+      progress: item.progress,
+      isCompleted: item.is_completed,
+    }));
+  } catch (error) {
+    console.error("Error in getAchievements:", error);
+    return [];
+  }
 };
 
 export const getReadingStats = async (): Promise<ReadingStats> => {
-  await initializeData();
-  const statsJson = await AsyncStorage.getItem(STORAGE_KEYS.READING_STATS);
-  return statsJson
-    ? JSON.parse(statsJson)
-    : { booksRead: 0, pagesRead: 0, hoursRead: 0 };
-};
+  try {
+    const { data: stats, error } = await supabase
+      .from("reading_stats")
+      .select("*")
+      .single();
 
-// Initialize data when the app starts
-initializeData();
+    if (error) {
+      console.error("Error fetching reading stats:", error);
+      return { booksRead: 0, pagesRead: 0, hoursRead: 0 };
+    }
+
+    // Transform from database format to application format
+    return {
+      booksRead: stats.books_read,
+      pagesRead: stats.pages_read,
+      hoursRead: stats.hours_read,
+    };
+  } catch (error) {
+    console.error("Error in getReadingStats:", error);
+    return { booksRead: 0, pagesRead: 0, hoursRead: 0 };
+  }
+};

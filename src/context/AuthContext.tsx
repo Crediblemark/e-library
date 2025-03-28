@@ -5,18 +5,27 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { UserRole } from "../utils/auth";
 import {
-  User,
-  getCurrentUser,
-  login as authLogin,
-  logout as authLogout,
-  UserRole,
-} from "../utils/auth";
+  supabase,
+  signIn,
+  signOut,
+  getCurrentSession,
+} from "../services/supabase";
+
+// Define User interface based on Supabase auth user
+export interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  name?: string;
+  avatar?: string;
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasRole: (role: UserRole) => boolean;
@@ -46,39 +55,117 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in with Supabase
     const loadUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        const { data, error } = await getCurrentSession();
+
+        if (error || !data.session) {
+          setUser(null);
+          return;
+        }
+
+        // Get user profile data from the profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", data.session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        }
+
+        // Create user object combining auth and profile data
+        const userData: User = {
+          id: data.session.user.id,
+          email: data.session.user.email || "",
+          role: (profileData?.role as UserRole) || UserRole.READER,
+          name:
+            profileData?.name || data.session.user.email?.split("@")[0] || "",
+          avatar: profileData?.avatar_url,
+        };
+
+        setUser(userData);
       } catch (error) {
         console.error("Failed to load user:", error);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadUser();
+
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          // Get user profile data
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+
+          if (profileError && profileError.code !== "PGRST116") {
+            console.error("Error fetching user profile:", profileError);
+          }
+
+          // Create user object
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || "",
+            role: (profileData?.role as UserRole) || UserRole.READER,
+            name: profileData?.name || session.user.email?.split("@")[0] || "",
+            avatar: profileData?.avatar_url,
+          };
+
+          setUser(userData);
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+        }
+      },
+    );
+
+    return () => {
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
+    };
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     try {
-      const loggedInUser = await authLogin(username, password);
-      if (loggedInUser) {
-        setUser(loggedInUser);
-        return true;
+      console.log("AuthContext: Attempting login with email:", email);
+      const { data, error } = await signIn(email, password);
+
+      if (error) {
+        console.error("Login error:", error.message);
+        throw error;
       }
-      return false;
+
+      if (!data || !data.user) {
+        console.error("Login failed: No user data returned");
+        return false;
+      }
+
+      console.log("Login successful for user:", data.user.id);
+      // User will be set by the auth state change listener
+      return true;
     } catch (error) {
-      console.error("Login error:", error);
-      return false;
+      console.error("Login exception:", error);
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await authLogout();
-      setUser(null);
+      const { error } = await signOut();
+      if (error) {
+        console.error("Logout error:", error);
+      }
+      // User will be cleared by the auth state change listener
     } catch (error) {
       console.error("Logout error:", error);
     }
