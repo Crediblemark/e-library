@@ -1,18 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
+import { auth0Service } from "./auth0";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_KEY || "";
 
 console.log("Supabase URL available:", !!supabaseUrl);
 console.log("Supabase Anon Key available:", !!supabaseAnonKey);
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    "Supabase credentials are missing. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.",
+    "Supabase credentials are missing. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY environment variables.",
   );
 }
 
+// Create standard Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -20,6 +22,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Alternative Supabase client for Auth0 third-party auth
+export const createSupabaseWithAuth0 = (accessToken: string) => {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    accessToken: async () => accessToken,
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+};
 
 // Log Supabase initialization
 console.log("Supabase client initialized");

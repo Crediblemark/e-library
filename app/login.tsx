@@ -20,7 +20,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
+  const { login, loginWithAuth0 } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -45,6 +46,26 @@ export default function LoginScreen() {
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAuth0Login = async () => {
+    setIsAuth0Loading(true);
+    try {
+      const success = await loginWithAuth0();
+      if (success) {
+        // Small delay to ensure context is updated before navigation
+        setTimeout(() => {
+          router.replace("/");
+        }, 100);
+      } else {
+        Alert.alert("Login Failed", "Auth0 login failed. Please try again.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "An error occurred during Auth0 login");
+      console.error(error);
+    } finally {
+      setIsAuth0Loading(false);
     }
   };
 
@@ -112,13 +133,33 @@ export default function LoginScreen() {
           {/* Login Button */}
           <TouchableOpacity
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || isAuth0Loading}
             className={`bg-primary-600 py-4 rounded-xl items-center ${isLoading ? "opacity-70" : ""}`}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-white font-bold text-lg">Sign In</Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View className="flex-row items-center my-6">
+            <View className="flex-1 h-px bg-gray-300" />
+            <Text className="mx-4 text-gray-500 font-medium">OR</Text>
+            <View className="flex-1 h-px bg-gray-300" />
+          </View>
+
+          {/* Auth0 Login Button */}
+          <TouchableOpacity
+            onPress={handleAuth0Login}
+            disabled={isLoading || isAuth0Loading}
+            className={`bg-white border-2 border-primary-600 py-4 rounded-xl items-center ${isAuth0Loading ? "opacity-70" : ""}`}
+          >
+            {isAuth0Loading ? (
+              <ActivityIndicator color="#6366f1" />
+            ) : (
+              <Text className="text-primary-600 font-bold text-lg">Continue with Auth0</Text>
             )}
           </TouchableOpacity>
 

@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
+    "linking": {
+      "prefixes": ["myapp://", "https://your-app-domain.com"]
+    },
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
