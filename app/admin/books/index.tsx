@@ -87,7 +87,7 @@ export default function ManageBooks() {
     "Non-Fiction",
   ];
 
-  const filteredBooks = books.filter((book) => {
+  const filteredBooks = books.filter((book: any) => {
     const matchesSearch =
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       book.author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -102,7 +102,7 @@ export default function ManageBooks() {
   };
 
   const handleEditBook = (id: string) => {
-    router.push(`/admin/books/edit/${id}`);
+    router.push(`/admin/books/edit/${id}` as any);
   };
 
   return (

@@ -7,11 +7,18 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from 'react-native';
 
 // Create a safe wrapper around AsyncStorage
 const safeStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return localStorage.getItem(key);
+        }
+        return null;
+      }
       return await AsyncStorage.getItem(key);
     } catch (error) {
       console.error("Error reading from storage:", error);
@@ -21,6 +28,12 @@ const safeStorage = {
 
   setItem: async (key: string, value: string): Promise<boolean> => {
     try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(key, value);
+        }
+        return true;
+      }
       await AsyncStorage.setItem(key, value);
       return true;
     } catch (error) {
@@ -31,6 +44,12 @@ const safeStorage = {
 
   removeItem: async (key: string): Promise<boolean> => {
     try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.removeItem(key);
+        }
+        return true;
+      }
       await AsyncStorage.removeItem(key);
       return true;
     } catch (error) {
@@ -41,6 +60,12 @@ const safeStorage = {
 
   clear: async (): Promise<boolean> => {
     try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.clear();
+        }
+        return true;
+      }
       await AsyncStorage.clear();
       return true;
     } catch (error) {
@@ -51,3 +76,4 @@ const safeStorage = {
 };
 
 export default safeStorage;
+export { safeStorage };

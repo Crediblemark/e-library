@@ -211,7 +211,7 @@ export default function ChapterEditorScreen() {
       const chapterData = chaptersData[chapterId as keyof typeof chaptersData];
       if (chapterData) {
         setChapterTitle(chapterData.title);
-        setBlocks(chapterData.blocks);
+        setBlocks(chapterData.blocks as Block[]);
         setWordCount(chapterData.wordCount);
       }
     }
@@ -225,7 +225,7 @@ export default function ChapterEditorScreen() {
   // Update word count when blocks change
   useEffect(() => {
     if (blocks.length > 0) {
-      const totalContent = blocks.map((block) => block.content).join(" ");
+      const totalContent = blocks.map((block: Block) => block.content).join(" ");
       const words = totalContent.trim().split(/\s+/);
       setWordCount(words.length > 0 && words[0] !== "" ? words.length : 0);
     } else {
@@ -253,7 +253,7 @@ export default function ChapterEditorScreen() {
           // In a real app, this would save to a database
           setLastSaved(new Date());
         }
-      }, 30000); // Auto-save after 30 seconds of inactivity
+      }, 30000) as any; // Auto-save after 30 seconds of inactivity
     }
 
     return () => {
@@ -277,7 +277,7 @@ export default function ChapterEditorScreen() {
           }
           return prev - 1;
         });
-      }, 1000);
+      }, 1000) as any;
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }

@@ -70,13 +70,13 @@ const ReadScreen = () => {
     return Math.round(((currentPage + 1) / book.content.length) * 100);
   };
 
-  const formatReadingTime = (seconds) => {
+  const formatReadingTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  const handleTextSelection = (text) => {
+  const handleTextSelection = (text: string) => {
     setSelectedText(text);
     if (text) {
       setShowHighlightOptions(true);
@@ -85,7 +85,7 @@ const ReadScreen = () => {
     }
   };
 
-  const handleHighlight = (color) => {
+  const handleHighlight = (color: string) => {
     // Here you would implement the actual highlighting logic
     Alert.alert("Highlighted", `Text "${selectedText}" has been highlighted.`);
     setShowHighlightOptions(false);
@@ -133,7 +133,7 @@ const ReadScreen = () => {
           duration: 200,
           useNativeDriver: true,
         }).start(() => setShowControls(false));
-      }, 3000);
+      }, 3000) as any;
     }
   };
 
@@ -160,18 +160,6 @@ const ReadScreen = () => {
               style={{ fontSize }}
               className={`leading-7 ${darkMode ? "text-white" : "text-black"}`}
               selectable={true}
-              onSelectionChange={(event) => {
-                const { selection, text } = event.nativeEvent;
-                if (selection.start !== selection.end) {
-                  const selectedText = text.substring(
-                    selection.start,
-                    selection.end,
-                  );
-                  handleTextSelection(selectedText);
-                } else {
-                  handleTextSelection("");
-                }
-              }}
             >
               {book.content[currentPage]}
             </Text>

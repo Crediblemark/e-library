@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       title: "System Settings",
       icon: Settings,
       color: "#9333ea",
-      onPress: () => router.push("/admin/settings"),
+      onPress: () => router.push("/admin/settings" as any),
       description: "Configure system settings and preferences",
       adminOnly: true,
     },
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
         {/* Admin Functions */}
         <Text className="text-xl font-bold mb-4">Admin Functions</Text>
         <View className="flex-row flex-wrap justify-between">
-          {adminCards.map((card, index) => {
+          {adminCards.map((card: any, index: number) => {
             // Skip admin-only cards for librarians
             if (card.adminOnly && !isAdmin) return null;
 

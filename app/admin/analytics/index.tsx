@@ -99,8 +99,8 @@ export default function AnalyticsDashboard() {
   ];
 
   // Function to render a simple bar chart
-  const renderBarChart = (data, valueKey) => {
-    const maxValue = Math.max(...data.map((item) => item[valueKey]));
+  const renderBarChart = (data: any[], valueKey: string) => {
+    const maxValue = Math.max(...data.map((item: any) => item[valueKey]));
 
     return (
       <View className="flex-row items-end justify-between h-40 mt-2">

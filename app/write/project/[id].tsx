@@ -22,12 +22,14 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { getProject, Project } from "../../../src/services/api";
+import { useAuth as useClerkAuth } from '@clerk/clerk-expo';
 
 export default function ProjectDetailScreen() {
   const params = useLocalSearchParams();
   const { id } = params;
   const isFirstChapter = params.firstChapter === "true";
   const router = useRouter();
+  const { getToken } = useClerkAuth();
   const [showOptions, setShowOptions] = useState(false);
   const [firstChapter, setFirstChapter] = useState(false);
   const [projectData, setProjectData] = useState<Project | null>(null);
@@ -39,7 +41,22 @@ export default function ProjectDetailScreen() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const project = await getProject(projectId);
+        let token;
+        try {
+          token = await getToken({ template: 'supabase' });
+        } catch (tokenError) {
+          console.error('Error getting Supabase token - JWT template may not be configured:', tokenError);
+          console.warn('Please configure JWT template in Clerk dashboard. See CLERK_JWT_TEMPLATE_FIX.md for instructions.');
+          setLoading(false);
+          return;
+        }
+        
+        if (!token) {
+          console.error('No authentication token available - check Clerk JWT template configuration');
+          setLoading(false);
+          return;
+        }
+        const project = await getProject(projectId, token);
         if (project) {
           setProjectData(project);
         } else if (projectId === "new") {
@@ -137,30 +154,20 @@ export default function ProjectDetailScreen() {
   };
 
   const handleCreateNewChapter = () => {
-    router.push({
-      pathname: "/write/chapter/new",
-      params: { projectId: projectData.id },
-    });
+    router.push(`/write/chapter/new?projectId=${projectData.id}`);
   };
 
   const handleEditChapter = (chapterId: string) => {
-    router.push({
-      pathname: `/write/chapter/${chapterId}`,
-      params: { projectId: projectData.id },
-    });
+    router.push(`/write/chapter/${chapterId}?projectId=${projectData.id}`);
   };
 
   const handleReadChapter = (chapterId: string) => {
-    router.push({
-      pathname: `/read/${chapterId}`,
-    });
+    router.push(`/read/${chapterId}` as any);
   };
 
   const handleEditProjectDetails = () => {
     // Navigate to edit project details
-    router.push({
-      pathname: `/write/edit/${projectData.id}`,
-    });
+    router.push(`/write/edit/${projectData.id}` as any);
   };
 
   const handlePublishProject = () => {
@@ -318,7 +325,7 @@ export default function ProjectDetailScreen() {
               {projectData.description}
             </Text>
             <View className="flex-row flex-wrap">
-              {projectData.genres.map((genre, index) => (
+              {projectData.genres.map((genre: string, index: number) => (
                 <View
                   key={index}
                   className="bg-gray-100 px-2 py-1 rounded-full mr-1 mb-1"
@@ -341,7 +348,7 @@ export default function ProjectDetailScreen() {
           <View className="items-center">
             <Text className="text-lg font-bold text-gray-800">
               {projectData.chapters.reduce(
-                (sum, chapter) => sum + chapter.wordCount,
+                (sum: number, chapter: any) => sum + chapter.wordCount,
                 0,
               )}
             </Text>

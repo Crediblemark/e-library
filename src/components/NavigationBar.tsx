@@ -71,9 +71,9 @@ const NavigationBar = ({ activeTab = "home" }: NavigationBarProps) => {
 
   const handleNavigation = (route: string) => {
     try {
-      router.push(route);
+      router.push(route as any);
     } catch (error) {
-      console.error("Navigation error:", error);
+      console.error("Navigation error:", (error as Error).message || String(error));
     }
   };
 

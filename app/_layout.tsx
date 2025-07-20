@@ -7,74 +7,63 @@ import { useEffect } from "react";
 import "react-native-reanimated";
 import "../global.css";
 import { Platform } from "react-native";
-import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { tokenCache } from '../src/lib/auth';
+import { AuthProvider, useAuth as useAppAuth } from "../src/context/AuthContext";
 import { UserRole } from "../src/utils/auth";
+import { AppWrapper } from "../src/components/AppWrapper";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
-  const { user, isLoading } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user, isLoading } = useAppAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!isLoaded || isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
     const isAdminRoute = segments[0] === "admin";
 
-    // If not logged in and not on login screen, redirect to login
-    if (!user && !inAuthGroup && segments[0] !== "login") {
-      router.replace("/login");
-    }
-
-    // If logged in and on login screen, redirect to home
-    if (user && segments[0] === "login") {
+    if (!isSignedIn && !inAuthGroup) {
+      // User is not signed in and not in auth group, redirect to sign-in
+      router.replace("/(auth)/sign-in");
+    } else if (isSignedIn && inAuthGroup) {
+      // User is signed in but in auth group, redirect to home
       router.replace("/");
-    }
-
-    // If trying to access admin routes without proper permissions
-    if (
+    } else if (
+      isSignedIn &&
       user &&
       isAdminRoute &&
       user.role !== UserRole.ADMIN &&
       user.role !== UserRole.LIBRARIAN
     ) {
+      // User trying to access admin routes without proper permissions
       router.replace("/");
     }
-  }, [user, segments, isLoading, router]);
+  }, [isSignedIn, isLoaded, user, isLoading, segments, router]);
 
   return (
-    <Stack
-      screenOptions={({ route }) => ({
-        headerShown: !route.name.startsWith("tempobook"),
-      })}
-    >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="read/[id]" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="admin"
-        options={{
-          headerShown: false,
-          presentation: "modal",
-        }}
-      />
-      <Stack.Screen
-        name="admin/books"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="admin/users"
-        options={{
-          headerShown: false,
-        }}
-      />
-    </Stack>
+    <AppWrapper>
+      <Stack
+        screenOptions={({ route }) => ({
+          headerShown: !route.name.startsWith("tempobook"),
+        })}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="read/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="my-books" options={{ headerShown: false }} />
+        <Stack.Screen name="achievements" options={{ headerShown: false }} />
+        <Stack.Screen name="write" options={{ headerShown: false }} />
+      </Stack>
+    </AppWrapper>
   );
 }
 
@@ -95,12 +84,29 @@ export default function RootLayout() {
     return null;
   }
 
+  const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+
+  if (!publishableKey) {
+    throw new Error(
+      'Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env'
+    );
+  }
+
+  // Clerk options for development
+const clerkOptions = {
+  tokenCache,
+  // Disable CAPTCHA for development
+  __unstable_disableCaptcha: __DEV__,
+};
+
   return (
-    <AuthProvider>
-      <ThemeProvider value={DefaultTheme}>
-        <RootLayoutNav />
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </AuthProvider>
+      <ClerkProvider publishableKey={publishableKey} {...clerkOptions}>
+      <AuthProvider>
+        <ThemeProvider value={DefaultTheme}>
+          <RootLayoutNav />
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </AuthProvider>
+    </ClerkProvider>
   );
 }

@@ -21,11 +21,16 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { useAuth } from "../src/context/AuthContext";
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import { getReadingStats, getProjects } from "../src/services/api";
 import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const authContext = useAuth();
+  const user = authContext.user;
+  const logout = authContext.logout;
+  const { user: clerkUser } = useClerkUser();
+  const { getToken } = useClerkAuth();
   const [readingStats, setReadingStats] = useState({
     booksRead: 0,
     pagesRead: 0,
@@ -38,12 +43,27 @@ export default function ProfileScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const stats = await getReadingStats();
-        const projects = await getProjects();
+        let token;
+        try {
+          token = await getToken({ template: 'supabase' });
+        } catch (tokenError) {
+          console.error('Error getting Supabase token - JWT template may not be configured:', tokenError);
+          console.warn('Please configure JWT template in Clerk dashboard. See CLERK_JWT_TEMPLATE_FIX.md for instructions.');
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!token) {
+          console.error('No authentication token available - check Clerk JWT template configuration');
+          setIsLoading(false);
+          return;
+        }
+        const stats = await getReadingStats(token);
+        const projects = await getProjects(token);
         setReadingStats(stats);
         setProjectCount(projects.length);
       } catch (error) {
-        console.error("Error fetching profile data:", error);
+        console.error("Error fetching profile data:", (error as Error).message || String(error));
       } finally {
         setLoading(false);
       }
@@ -69,7 +89,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <Header title="Profile" showBackButton={false} />
+        <Header title="Profile" />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text className="mt-4 text-gray-600">Loading your profile...</Text>
@@ -81,12 +101,12 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <Header title="Profile" showBackButton={false} />
+      <Header title="Profile" />
       <ScrollView className="flex-1 p-4">
         <View className="items-center justify-center py-6">
-          {user?.avatar ? (
+          {(clerkUser?.imageUrl || user?.avatar) ? (
             <Image
-              source={{ uri: user.avatar }}
+              source={{ uri: clerkUser?.imageUrl || user?.avatar }}
               className="w-24 h-24 rounded-full mb-4"
               resizeMode="cover"
             />
@@ -96,10 +116,10 @@ export default function ProfileScreen() {
             </View>
           )}
           <Text className="text-2xl font-bold text-gray-800">
-            {user?.name || "User Name"}
+            {clerkUser?.fullName || user?.name || "User Name"}
           </Text>
           <Text className="text-gray-500 mb-2">
-            {user?.email || "user@example.com"}
+            {clerkUser?.primaryEmailAddress?.emailAddress || user?.email || "user@example.com"}
           </Text>
           <View className="bg-primary-50 px-3 py-1 rounded-full mb-6">
             <Text className="text-primary-700 text-sm font-medium">

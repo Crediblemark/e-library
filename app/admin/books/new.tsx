@@ -41,7 +41,7 @@ export default function AddNewBook() {
     }
   }, [hasRole, router, user]);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string) => {
     setBookData({
       ...bookData,
       [field]: value,

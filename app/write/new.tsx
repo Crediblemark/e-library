@@ -87,10 +87,7 @@ export default function NewWritingProject() {
     });
 
     // Navigate to the project detail page with firstChapter flag
-    router.push({
-      pathname: "/write/project/new",
-      params: { firstChapter: "true" },
-    });
+    router.push("/write/project/new?firstChapter=true");
   };
 
   return (

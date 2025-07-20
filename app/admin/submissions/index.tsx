@@ -107,10 +107,10 @@ export default function ManageSubmissions() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleApproveSubmission = (id) => {
+  const handleApproveSubmission = (id: string) => {
     // In a real app, this would call an API
     setSubmissions(
-      submissions.map((submission) =>
+      submissions.map((submission: any) =>
         submission.id === id
           ? { ...submission, status: "approved" }
           : submission,
@@ -122,7 +122,7 @@ export default function ManageSubmissions() {
     );
   };
 
-  const handleRejectSubmission = (id) => {
+  const handleRejectSubmission = (id: string) => {
     // In a real app, this would call an API
     Alert.alert(
       "Confirm Rejection",
@@ -136,7 +136,7 @@ export default function ManageSubmissions() {
           text: "Reject",
           onPress: () => {
             setSubmissions(
-              submissions.map((submission) =>
+              submissions.map((submission: any) =>
                 submission.id === id
                   ? { ...submission, status: "rejected" }
                   : submission,
@@ -153,7 +153,7 @@ export default function ManageSubmissions() {
     );
   };
 
-  const handleViewSubmission = (id) => {
+  const handleViewSubmission = (id: string) => {
     // In a real app, this would navigate to a detailed view
     Alert.alert(
       "View Submission",
@@ -161,7 +161,7 @@ export default function ManageSubmissions() {
     );
   };
 
-  const getStatusBadgeStyle = (status) => {
+  const getStatusBadgeStyle = (status: string) => {
     switch (status) {
       case "approved":
         return "bg-green-100 text-green-800";
@@ -172,7 +172,7 @@ export default function ManageSubmissions() {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "approved":
         return <CheckCircle size={16} color="#16a34a" />;

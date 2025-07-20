@@ -16,8 +16,10 @@ import {
   Achievement,
   ReadingStats,
 } from "../src/services/api";
+import { useAuth as useClerkAuth } from '@clerk/clerk-expo';
 
 export default function AchievementsScreen() {
+  const { getToken } = useClerkAuth();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [readingStats, setReadingStats] = useState<ReadingStats>({
     booksRead: 0,
@@ -29,12 +31,25 @@ export default function AchievementsScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const achievementsData = await getAchievements();
-        const statsData = await getReadingStats();
+        let token;
+        try {
+          token = await getToken({ template: 'supabase' });
+        } catch (tokenError) {
+          console.error('Error getting Supabase token - JWT template may not be configured:', tokenError);
+          console.warn('Please configure JWT template in Clerk dashboard. See CLERK_JWT_TEMPLATE_FIX.md for instructions.');
+          return;
+        }
+        
+        if (!token) {
+          console.error('No authentication token available - check Clerk JWT template configuration');
+          return;
+        }
+        const achievementsData = await getAchievements(token);
+        const statsData = await getReadingStats(token);
         setAchievements(achievementsData);
         setReadingStats(statsData);
       } catch (error) {
-        console.error("Error fetching achievements data:", error);
+        console.error("Error fetching achievements data:", (error as Error).message || String(error));
       } finally {
         setLoading(false);
       }
@@ -46,7 +61,7 @@ export default function AchievementsScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <Header title="Achievements" showBackButton={false} />
+        <Header title="Achievements" />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text className="mt-4 text-gray-600">
@@ -60,7 +75,7 @@ export default function AchievementsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <Header title="Achievements" showBackButton={false} />
+      <Header title="Achievements" />
       <ScrollView className="flex-1 p-4">
         <View className="items-center justify-center py-6">
           <Trophy size={60} color="#4f46e5" strokeWidth={1.5} />
@@ -115,7 +130,7 @@ export default function AchievementsScreen() {
               </View>
             ) : (
               <View>
-                {achievements.map((achievement) => (
+                {achievements.map((achievement: Achievement) => (
                   <View
                     key={achievement.id}
                     className="mb-4 bg-white p-4 rounded-lg"

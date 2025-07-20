@@ -95,9 +95,17 @@ export type BlockType =
   | "todo";
 
 // API functions using Supabase
-export const getProjects = async (): Promise<Project[]> => {
+export const getProjects = async (token?: string): Promise<Project[]> => {
   try {
-    const { data: projectsData, error: projectsError } = await supabase
+    if (!token) {
+      console.error("No authentication token provided");
+      return [];
+    }
+    
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: projectsData, error: projectsError } = await authenticatedSupabase
       .from("projects")
       .select("*");
 
@@ -109,7 +117,7 @@ export const getProjects = async (): Promise<Project[]> => {
     // For each project, fetch its chapters
     const projectsWithChapters = await Promise.all(
       projectsData.map(async (project) => {
-        const { data: chaptersData, error: chaptersError } = await supabase
+        const { data: chaptersData, error: chaptersError } = await authenticatedSupabase
           .from("chapters")
           .select("*")
           .eq("project_id", project.id);
@@ -125,7 +133,7 @@ export const getProjects = async (): Promise<Project[]> => {
         // For each chapter, fetch its blocks
         const chaptersWithBlocks = await Promise.all(
           chaptersData.map(async (chapter) => {
-            const { data: blocksData, error: blocksError } = await supabase
+            const { data: blocksData, error: blocksError } = await authenticatedSupabase
               .from("blocks")
               .select("*")
               .eq("chapter_id", chapter.id)
@@ -187,9 +195,17 @@ export const getProjects = async (): Promise<Project[]> => {
   }
 };
 
-export const getProject = async (id: string): Promise<Project | null> => {
+export const getProject = async (id: string, token?: string): Promise<Project | null> => {
   try {
-    const { data: project, error: projectError } = await supabase
+    if (!token) {
+      console.error("No authentication token provided");
+      return null;
+    }
+
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: project, error: projectError } = await authenticatedSupabase
       .from("projects")
       .select("*")
       .eq("id", id)
@@ -201,7 +217,7 @@ export const getProject = async (id: string): Promise<Project | null> => {
     }
 
     // Fetch chapters for this project
-    const { data: chaptersData, error: chaptersError } = await supabase
+    const { data: chaptersData, error: chaptersError } = await authenticatedSupabase
       .from("chapters")
       .select("*")
       .eq("project_id", id);
@@ -217,7 +233,7 @@ export const getProject = async (id: string): Promise<Project | null> => {
     // For each chapter, fetch its blocks
     const chaptersWithBlocks = await Promise.all(
       chaptersData.map(async (chapter) => {
-        const { data: blocksData, error: blocksError } = await supabase
+        const { data: blocksData, error: blocksError } = await authenticatedSupabase
           .from("blocks")
           .select("*")
           .eq("chapter_id", chapter.id)
@@ -411,9 +427,17 @@ export const saveChapter = async (chapter: Chapter): Promise<boolean> => {
   }
 };
 
-export const getBorrowedBooks = async (): Promise<BorrowedBook[]> => {
+export const getBorrowedBooks = async (token?: string): Promise<BorrowedBook[]> => {
   try {
-    const { data: borrowedBooks, error } = await supabase.from("borrowed_books")
+    if (!token) {
+      console.error("No authentication token provided");
+      return [];
+    }
+
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: borrowedBooks, error } = await authenticatedSupabase.from("borrowed_books")
       .select(`
         *,
         books:book_id(*)
@@ -446,9 +470,17 @@ export const getBorrowedBooks = async (): Promise<BorrowedBook[]> => {
   }
 };
 
-export const getReadingHistory = async (): Promise<ReadingHistory[]> => {
+export const getReadingHistory = async (token?: string): Promise<ReadingHistory[]> => {
   try {
-    const { data: readingHistory, error } = await supabase.from(
+    if (!token) {
+      console.error("No authentication token provided");
+      return [];
+    }
+
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: readingHistory, error } = await authenticatedSupabase.from(
       "reading_history",
     ).select(`
         *,
@@ -474,9 +506,17 @@ export const getReadingHistory = async (): Promise<ReadingHistory[]> => {
   }
 };
 
-export const getAchievements = async (): Promise<Achievement[]> => {
+export const getAchievements = async (token?: string): Promise<Achievement[]> => {
   try {
-    const { data: achievements, error } = await supabase
+    if (!token) {
+      console.error("No authentication token provided");
+      return [];
+    }
+
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: achievements, error } = await authenticatedSupabase
       .from("achievements")
       .select("*");
 
@@ -501,9 +541,17 @@ export const getAchievements = async (): Promise<Achievement[]> => {
   }
 };
 
-export const getReadingStats = async (): Promise<ReadingStats> => {
+export const getReadingStats = async (token?: string): Promise<ReadingStats> => {
   try {
-    const { data: stats, error } = await supabase
+    if (!token) {
+      console.error("No authentication token provided");
+      return { booksRead: 0, pagesRead: 0, hoursRead: 0 };
+    }
+
+    const { createSupabaseWithClerk } = await import('./supabase');
+    const authenticatedSupabase = createSupabaseWithClerk(token);
+    
+    const { data: stats, error } = await authenticatedSupabase
       .from("reading_stats")
       .select("*")
       .single();

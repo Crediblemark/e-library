@@ -17,9 +17,11 @@ import {
   ReadingHistory,
 } from "../src/services/api";
 import { useRouter } from "expo-router";
+import { useAuth as useClerkAuth } from '@clerk/clerk-expo';
 import { BookOpen, Clock } from "lucide-react-native";
 
 export default function MyBooksScreen() {
+  const { getToken } = useClerkAuth();
   const [borrowedBooks, setBorrowedBooks] = useState<BorrowedBook[]>([]);
   const [readingHistory, setReadingHistory] = useState<ReadingHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +30,27 @@ export default function MyBooksScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const books = await getBorrowedBooks();
-        const history = await getReadingHistory();
+        let token;
+        try {
+          token = await getToken({ template: 'supabase' });
+        } catch (tokenError) {
+          console.error('Error getting Supabase token - JWT template may not be configured:', tokenError);
+          console.warn('Please configure JWT template in Clerk dashboard. See CLERK_JWT_TEMPLATE_FIX.md for instructions.');
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!token) {
+          console.error('No authentication token available - check Clerk JWT template configuration');
+          setIsLoading(false);
+          return;
+        }
+        const books = await getBorrowedBooks(token);
+        const history = await getReadingHistory(token);
         setBorrowedBooks(books);
         setReadingHistory(history);
       } catch (error) {
-        console.error("Error fetching book data:", error);
+        console.error("Error fetching book data:", error instanceof Error ? error.message : String(error));
       } finally {
         setLoading(false);
       }
@@ -49,7 +66,7 @@ export default function MyBooksScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white">
-        <Header title="My Books" showBackButton={false} />
+        <Header title="My Books" />
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text className="mt-4 text-gray-600">Loading your books...</Text>
@@ -61,7 +78,7 @@ export default function MyBooksScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <Header title="My Books" showBackButton={false} />
+      <Header title="My Books" />
       <ScrollView className="flex-1 p-4">
         <View className="py-6">
           <Text className="text-2xl font-bold text-primary-600 mb-4">
@@ -92,7 +109,7 @@ export default function MyBooksScreen() {
                 showsHorizontalScrollIndicator={false}
                 className="mb-2"
               >
-                {borrowedBooks.map((book) => (
+                {borrowedBooks.map((book: BorrowedBook) => (
                   <TouchableOpacity
                     key={book.id}
                     onPress={() => handleBookPress(book.id)}
@@ -131,7 +148,7 @@ export default function MyBooksScreen() {
                 </Text>
               </View>
             ) : (
-              readingHistory.map((item) => (
+              readingHistory.map((item: ReadingHistory) => (
                 <TouchableOpacity
                   key={item.bookId}
                   onPress={() => handleBookPress(item.bookId)}
